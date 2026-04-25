@@ -58,10 +58,10 @@ def merge_video_audio():
     rprint(f"[bold green]Video resolution: {TARGET_WIDTH}x{TARGET_HEIGHT}[/bold green]")
     
     subtitle_filter = (
-        f"subtitles={DUB_SUB_FILE}:force_style='FontSize={TRANS_FONT_SIZE},"
-        f"FontName={TRANS_FONT_NAME},PrimaryColour={TRANS_FONT_COLOR},"
-        f"OutlineColour={TRANS_OUTLINE_COLOR},OutlineWidth={TRANS_OUTLINE_WIDTH},"
-        f"BackColour={TRANS_BACK_COLOR},Alignment=2,MarginV=27,BorderStyle=4'"
+        f"subtitles={DUB_SUB_FILE}:force_style=FontSize={TRANS_FONT_SIZE}\\,"
+        f"FontName={TRANS_FONT_NAME}\\,PrimaryColour={TRANS_FONT_COLOR}\\,"
+        f"OutlineColour={TRANS_OUTLINE_COLOR}\\,OutlineWidth={TRANS_OUTLINE_WIDTH}\\,"
+        f"BackColour={TRANS_BACK_COLOR}\\,Alignment=2\\,MarginV=27\\,BorderStyle=4"
     )
     
     cmd = [

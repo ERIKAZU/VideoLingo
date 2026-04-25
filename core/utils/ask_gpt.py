@@ -40,7 +40,7 @@ def _load_cache(prompt, resp_type, log_title):
 # ask gpt once
 # ------------
 
-@except_handler("GPT request failed", retry=5)
+@except_handler("GPT request failed", retry=2, delay=5)
 def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
     if not load_key("api.key"):
         raise ValueError("API key is not set")
@@ -50,7 +50,14 @@ def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
         rprint("use cache response")
         return cached
 
-    model = load_key("api.model")
+    # Build model list: primary model + fallback models
+    primary_model = load_key("api.model")
+    try:
+        fallback_models = load_key("api.fallback_models") or []
+    except KeyError:
+        fallback_models = []
+    models_to_try = [primary_model] + [m for m in fallback_models if m != primary_model]
+
     base_url = load_key("api.base_url")
     if 'ark' in base_url:
         base_url = "https://ark.cn-beijing.volces.com/api/v3" # huoshan base url
@@ -61,30 +68,54 @@ def ask_gpt(prompt, resp_type=None, valid_def=None, log_title="default"):
 
     messages = [{"role": "user", "content": prompt}]
 
-    params = dict(
-        model=model,
-        messages=messages,
-        response_format=response_format,
-        timeout=300
-    )
-    resp_raw = client.chat.completions.create(**params)
+    last_error = None
+    for model in models_to_try:
+        try:
+            params = dict(
+                model=model,
+                messages=messages,
+                response_format=response_format,
+                timeout=300
+            )
+            resp_raw = client.chat.completions.create(**params)
 
-    # process and return full result
-    resp_content = resp_raw.choices[0].message.content
-    if resp_type == "json":
-        resp = json_repair.loads(resp_content)
-    else:
-        resp = resp_content
-    
-    # check if the response format is valid
-    if valid_def:
-        valid_resp = valid_def(resp)
-        if valid_resp['status'] != 'success':
-            _save_cache(model, prompt, resp_content, resp_type, resp, log_title="error", message=valid_resp['message'])
-            raise ValueError(f"❎ API response error: {valid_resp['message']}")
+            # Guard against None response content (message or content can be None)
+            # This often happens when Gemini's safety filter blocks the content
+            if (not resp_raw.choices 
+                or resp_raw.choices[0].message is None 
+                or resp_raw.choices[0].message.content is None):
+                finish_reason = resp_raw.choices[0].finish_reason if resp_raw.choices else "no_choices"
+                rprint(f"[red]⚠️ Empty response from {model}, finish_reason={finish_reason}[/red]")
+                raise ValueError(f"Empty response from model {model} (finish_reason={finish_reason})")
 
-    _save_cache(model, prompt, resp_content, resp_type, resp, log_title=log_title)
-    return resp
+            # process and return full result
+            resp_content = resp_raw.choices[0].message.content
+            if resp_type == "json":
+                resp = json_repair.loads(resp_content)
+            else:
+                resp = resp_content
+            
+            # check if the response format is valid
+            if valid_def:
+                valid_resp = valid_def(resp)
+                if valid_resp['status'] != 'success':
+                    _save_cache(model, prompt, resp_content, resp_type, resp, log_title="error", message=valid_resp['message'])
+                    raise ValueError(f"❎ API response error: {valid_resp['message']}")
+
+            _save_cache(model, prompt, resp_content, resp_type, resp, log_title=log_title)
+            return resp
+        except Exception as e:
+            last_error = e
+            error_str = str(e)
+            # Try fallback model on 404, 429, or empty response
+            is_fallback_worthy = ('404' in error_str or '429' in error_str or 'Empty response' in error_str)
+            if is_fallback_worthy and model != models_to_try[-1]:
+                rprint(f"[yellow]⚠️ Model '{model}' failed ({error_str[:80]}...), trying next fallback model...[/yellow]")
+                continue
+            else:
+                raise  # Let except_handler handle retry with backoff
+
+    raise last_error  # All models failed
 
 
 if __name__ == '__main__':

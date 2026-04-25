@@ -9,6 +9,8 @@ _4_1_TERMINOLOGY = "output/log/terminology.json"
 _4_2_TRANSLATION = "output/log/translation_results.xlsx"
 _5_SPLIT_SUB = "output/log/translation_results_for_subtitles.xlsx"
 _5_REMERGED = "output/log/translation_results_remerged.xlsx"
+_6_1_VOCAB_JSON = "output/log/vocab_overlay.json"
+_6_1_VOCAB_ASS = "output/vocab.ass"
 
 _8_1_AUDIO_TASK = "output/audio/tts_tasks.xlsx"
 
@@ -37,6 +39,8 @@ __all__ = [
     "_4_2_TRANSLATION",
     "_5_SPLIT_SUB",
     "_5_REMERGED",
+    "_6_1_VOCAB_JSON",
+    "_6_1_VOCAB_ASS",
     "_8_1_AUDIO_TASK",
     "_OUTPUT_DIR",
     "_AUDIO_DIR",

@@ -28,15 +28,41 @@ def translate_lines(lines, previous_content_prompt, after_cotent_prompt, things_
         def valid_express(response_data):
             return valid_translate_result(response_data, [str(i) for i in range(1, length+1)], ['free'])
         for retry in range(3):
-            if step_name == 'faithfulness':
-                result = ask_gpt(prompt+retry* " ", resp_type='json', valid_def=valid_faith, log_title=f'translate_{step_name}')
-            elif step_name == 'expressiveness':
-                result = ask_gpt(prompt+retry* " ", resp_type='json', valid_def=valid_express, log_title=f'translate_{step_name}')
-            if len(lines.split('\n')) == len(result):
-                return result
-            if retry != 2:
-                console.print(f'[yellow]⚠️ {step_name.capitalize()} translation of block {index} failed, Retry...[/yellow]')
-        raise ValueError(f'[red]❌ {step_name.capitalize()} translation of block {index} failed after 3 retries. Please check `output/gpt_log/error.json` for more details.[/red]')
+            try:
+                if step_name == 'faithfulness':
+                    result = ask_gpt(prompt+retry* " ", resp_type='json', valid_def=valid_faith, log_title=f'translate_{step_name}')
+                elif step_name == 'expressiveness':
+                    result = ask_gpt(prompt+retry* " ", resp_type='json', valid_def=valid_express, log_title=f'translate_{step_name}')
+                if len(lines.split('\n')) == len(result):
+                    return result
+                if retry != 2:
+                    console.print(f'[yellow]⚠️ {step_name.capitalize()} translation of block {index} failed, Retry...[/yellow]')
+            except Exception as e:
+                console.print(f'[yellow]⚠️ {step_name.capitalize()} translation of block {index} error: {e}[/yellow]')
+                if retry != 2:
+                    console.print(f'[yellow]⚠️ Retrying...[/yellow]')
+
+        # Full chunk failed — try translating each sentence individually
+        console.print(f'[yellow]⚠️ Full chunk translation failed for block {index}, trying per-sentence translation...[/yellow]')
+        line_list = lines.split('\n')
+        fallback = {}
+        for idx, line in enumerate(line_list, 1):
+            single_prompt = get_prompt_faithfulness(line, shared_prompt) if step_name == 'faithfulness' else get_prompt_expressiveness({"1": {"origin": line, "direct": line}}, line, shared_prompt)
+            single_valid = (lambda r: valid_translate_result(r, ["1"], ['direct'])) if step_name == 'faithfulness' else (lambda r: valid_translate_result(r, ["1"], ['free']))
+            try:
+                single_result = ask_gpt(single_prompt, resp_type='json', valid_def=single_valid, log_title=f'translate_{step_name}')
+                if step_name == 'faithfulness':
+                    fallback[str(idx)] = {'origin': line, 'direct': single_result.get("1", {}).get('direct', line)}
+                else:
+                    fallback[str(idx)] = {'origin': line, 'free': single_result.get("1", {}).get('free', line)}
+                console.print(f'[green]  ✓ Sentence {idx} translated successfully[/green]')
+            except Exception as e:
+                console.print(f'[yellow]  ⚠️ Sentence {idx} failed ({e}), using original text[/yellow]')
+                if step_name == 'faithfulness':
+                    fallback[str(idx)] = {'origin': line, 'direct': line}
+                else:
+                    fallback[str(idx)] = {'origin': line, 'free': line}
+        return fallback
 
     ## Step 1: Faithful to the Original Text
     prompt1 = get_prompt_faithfulness(lines, shared_prompt)

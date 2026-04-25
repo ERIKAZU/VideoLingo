@@ -115,6 +115,10 @@ def _get_text_steps():
             ),
         ),
         (
+            t("Generate vocabulary overlay"),
+            _6_1_vocab_overlay.generate_vocab_overlay,
+        ),
+        (
             t("Merging subtitles into the video"),
             _7_sub_into_vid.merge_subtitles_to_video,
         ),
