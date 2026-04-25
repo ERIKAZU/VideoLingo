@@ -1,11 +1,19 @@
 import functools
 import time
+import re
 import os
 from rich import print as rprint
 
 # ------------------------------
 # retry decorator
 # ------------------------------
+
+def _parse_retry_delay(error_str):
+    """Parse server-suggested retry delay from 429 error messages (e.g. 'retryDelay': '55s')."""
+    match = re.search(r"retryDelay['\"]?\s*[:=]\s*['\"]?(\d+(?:\.\d+)?)\s*s", error_str)
+    if match:
+        return float(match.group(1))
+    return None
 
 def except_handler(error_msg, retry=0, delay=1, default_return=None):
     def decorator(func):
@@ -22,7 +30,16 @@ def except_handler(error_msg, retry=0, delay=1, default_return=None):
                         if default_return is not None:
                             return default_return
                         raise last_exception
-                    time.sleep(delay * (2**i))
+                    # Use server-suggested delay for 429 errors, otherwise exponential backoff
+                    error_str = str(e)
+                    server_delay = _parse_retry_delay(error_str) if '429' in error_str else None
+                    if server_delay:
+                        wait_time = server_delay + 5  # add buffer
+                        rprint(f"[yellow]⏳ Rate limited, waiting {wait_time:.0f}s (server suggested {server_delay:.0f}s)...[/yellow]")
+                    else:
+                        wait_time = delay * (2 ** i)
+                        rprint(f"[yellow]⏳ Retrying in {wait_time:.0f}s...[/yellow]")
+                    time.sleep(wait_time)
         return wrapper
     return decorator
 

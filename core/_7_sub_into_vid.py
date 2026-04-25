@@ -67,18 +67,54 @@ def merge_subtitles_to_video():
     TARGET_HEIGHT = int(video.get(cv2.CAP_PROP_FRAME_HEIGHT))
     video.release()
     rprint(f"[bold green]Video resolution: {TARGET_WIDTH}x{TARGET_HEIGHT}[/bold green]")
+    # Build force_style strings with escaped commas for FFmpeg filter parsing
+    # In FFmpeg subtitles filter, commas in force_style must be escaped
+    escaped_font = FONT_NAME.replace(' ', r'\ ')
+    escaped_trans_font = TRANS_FONT_NAME.replace(' ', r'\ ')
+    ESC = r'\,'  # escaped comma for FFmpeg
+
+    src_parts = [
+        "FontSize=" + str(SRC_FONT_SIZE),
+        "FontName=" + escaped_font,
+        "PrimaryColour=" + SRC_FONT_COLOR,
+        "OutlineColour=" + SRC_OUTLINE_COLOR,
+        "OutlineWidth=" + str(SRC_OUTLINE_WIDTH),
+        "ShadowColour=" + SRC_SHADOW_COLOR,
+        "Shadow=1",
+        "BorderStyle=1",
+    ]
+    src_style = ESC.join(src_parts)
+
+    trans_parts = [
+        "FontSize=" + str(TRANS_FONT_SIZE),
+        "FontName=" + escaped_trans_font,
+        "PrimaryColour=" + TRANS_FONT_COLOR,
+        "OutlineColour=" + TRANS_OUTLINE_COLOR,
+        "OutlineWidth=" + str(TRANS_OUTLINE_WIDTH),
+        "BackColour=" + TRANS_BACK_COLOR,
+        "Shadow=1",
+        "Alignment=2",
+        "MarginV=27",
+        "BorderStyle=4",
+    ]
+    trans_style = ESC.join(trans_parts)
+
+    vf_filter = (
+        f"scale={TARGET_WIDTH}:{TARGET_HEIGHT}:force_original_aspect_ratio=decrease,"
+        f"pad={TARGET_WIDTH}:{TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2,"
+        f"subtitles={SRC_SRT}:force_style={src_style},"
+        f"subtitles={TRANS_SRT}:force_style={trans_style}"
+    )
+
+    # Add vocabulary overlay if it exists (ASS file handles its own styling)
+    VOCAB_ASS = f"{OUTPUT_DIR}/vocab.ass"
+    if os.path.exists(VOCAB_ASS):
+        vf_filter += f",subtitles={VOCAB_ASS}"
+        rprint("[bold cyan]📚 Including vocabulary overlay in video[/bold cyan]")
+
     ffmpeg_cmd = [
         'ffmpeg', '-i', video_file,
-        '-vf', (
-            f"scale={TARGET_WIDTH}:{TARGET_HEIGHT}:force_original_aspect_ratio=decrease,"
-            f"pad={TARGET_WIDTH}:{TARGET_HEIGHT}:(ow-iw)/2:(oh-ih)/2,"
-            f"subtitles={SRC_SRT}:force_style='FontSize={SRC_FONT_SIZE},FontName={FONT_NAME}," 
-            f"PrimaryColour={SRC_FONT_COLOR},OutlineColour={SRC_OUTLINE_COLOR},OutlineWidth={SRC_OUTLINE_WIDTH},"
-            f"ShadowColour={SRC_SHADOW_COLOR},BorderStyle=1',"
-            f"subtitles={TRANS_SRT}:force_style='FontSize={TRANS_FONT_SIZE},FontName={TRANS_FONT_NAME},"
-            f"PrimaryColour={TRANS_FONT_COLOR},OutlineColour={TRANS_OUTLINE_COLOR},OutlineWidth={TRANS_OUTLINE_WIDTH},"
-            f"BackColour={TRANS_BACK_COLOR},Alignment=2,MarginV=27,BorderStyle=4'"
-        ).encode('utf-8'),
+        '-vf', vf_filter,
     ]
 
     ffmpeg_gpu = load_key("ffmpeg_gpu")

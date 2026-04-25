@@ -226,6 +226,85 @@ def page_setting():
         if burn_subtitles != load_key("burn_subtitles"):
             update_key("burn_subtitles", burn_subtitles)
             st.rerun()
+
+    with st.expander(t("Vocab Overlay Settings"), expanded=False):
+        # Enable toggle
+        try:
+            vocab_enabled = load_key("vocab_overlay.enabled")
+        except KeyError:
+            vocab_enabled = False
+        vocab_toggle = st.toggle(
+            t("Enable Vocab Overlay"),
+            value=vocab_enabled,
+            help=t("Show N2+ vocabulary and grammar below subtitles"),
+        )
+        if vocab_toggle != vocab_enabled:
+            update_key("vocab_overlay.enabled", vocab_toggle)
+            st.rerun()
+
+        if vocab_toggle:
+            st.caption(t("Font Sizes"))
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                try:
+                    src_fs = load_key("vocab_overlay.src_font_size")
+                except KeyError:
+                    src_fs = 24
+                new_src_fs = st.slider(t("Source"), 12, 48, src_fs, key="vo_src_fs")
+                if new_src_fs != src_fs:
+                    update_key("vocab_overlay.src_font_size", new_src_fs)
+            with c2:
+                try:
+                    trans_fs = load_key("vocab_overlay.trans_font_size")
+                except KeyError:
+                    trans_fs = 26
+                new_trans_fs = st.slider(t("Translation"), 12, 48, trans_fs, key="vo_trans_fs")
+                if new_trans_fs != trans_fs:
+                    update_key("vocab_overlay.trans_font_size", new_trans_fs)
+            with c3:
+                try:
+                    vocab_fs = load_key("vocab_overlay.vocab_font_size")
+                except KeyError:
+                    vocab_fs = 20
+                new_vocab_fs = st.slider(t("Vocab"), 12, 48, vocab_fs, key="vo_vocab_fs")
+                if new_vocab_fs != vocab_fs:
+                    update_key("vocab_overlay.vocab_font_size", new_vocab_fs)
+
+            st.caption(t("Colors"))
+            c1, c2 = st.columns(2)
+            with c1:
+                try:
+                    src_color = load_key("vocab_overlay.src_color")
+                except KeyError:
+                    src_color = "#FFFFFF"
+                new_src_color = st.color_picker(t("Source Text"), src_color, key="vo_src_clr")
+                if new_src_color != src_color:
+                    update_key("vocab_overlay.src_color", new_src_color)
+
+                try:
+                    vocab_color = load_key("vocab_overlay.vocab_color")
+                except KeyError:
+                    vocab_color = "#B0E0FF"
+                new_vocab_color = st.color_picker(t("Vocab Text"), vocab_color, key="vo_vocab_clr")
+                if new_vocab_color != vocab_color:
+                    update_key("vocab_overlay.vocab_color", new_vocab_color)
+            with c2:
+                try:
+                    trans_color = load_key("vocab_overlay.trans_color")
+                except KeyError:
+                    trans_color = "#FFFF00"
+                new_trans_color = st.color_picker(t("Translation Text"), trans_color, key="vo_trans_clr")
+                if new_trans_color != trans_color:
+                    update_key("vocab_overlay.trans_color", new_trans_color)
+
+                try:
+                    vocab_bg = load_key("vocab_overlay.vocab_bg_color")
+                except KeyError:
+                    vocab_bg = "#00284A"
+                new_vocab_bg = st.color_picker(t("Vocab Background"), vocab_bg, key="vo_vocab_bg")
+                if new_vocab_bg != vocab_bg:
+                    update_key("vocab_overlay.vocab_bg_color", new_vocab_bg)
+
     with st.expander(t("Dubbing Settings"), expanded=True):
         tts_methods = [
             "azure_tts",

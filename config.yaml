@@ -11,12 +11,15 @@ display_language: "zh-CN"
 
 # API settings
 api:
-  key: 'your-api-key'
-  base_url: 'https://yunwu.ai'
-  model: ''
+  key: 'AIzaSyCqO_alG89hrO0lcI1HcXNqd1R9DKgZYqg'
+  base_url: 'https://generativelanguage.googleapis.com/v1beta/openai/'
+  model: 'models/gemini-3.1-flash-lite-preview'
+  fallback_models:
+  - 'models/gemini-3-flash-preview'
+  - 'models/gemini-2.5-flash'
   llm_support_json: false
 # *Number of LLM multi-threaded accesses, set to 1 if using local LLM
-max_workers: 4
+max_workers: 1
 
 # Language settings, written into the prompt, can be described in natural language
 target_language: '简体中文'
@@ -28,8 +31,8 @@ whisper:
   # ["large-v3", "large-v3-turbo"]. Note: for zh model will force to use Belle/large-v3
   model: 'large-v3'
   # Whisper specified recognition language ISO 639-1
-  language: 'en'
-  detected_language: 'en'
+  language: 'ja'
+  detected_language: 'ja'
   # Whisper running mode ["local", "cloud", "elevenlabs"]. Specifies where to run, cloud uses 302.ai API
   runtime: 'local'
   # 302.ai API key
@@ -38,7 +41,20 @@ whisper:
   elevenlabs_api_key: 'your_elevenlabs_api_key'
 
 # Whether to burn subtitles into the video
-burn_subtitles: true
+burn_subtitles: false
+
+# Japanese N2+ vocabulary/grammar overlay
+vocab_overlay:
+  enabled: true
+  # Font sizes for each layer
+  src_font_size: 29
+  trans_font_size: 29
+  vocab_font_size: 20
+  # Colors in hex RGB (will be converted to ASS BGR format)
+  src_color: '#FFFFFF'
+  trans_color: '#FFFF00'
+  vocab_color: '#f092ff'
+  vocab_bg_color: '#00284A'
 
 ## ======================== Advanced Settings ======================== ##
 # *🔬 h264_nvenc GPU acceleration for ffmpeg, make sure your GPU supports it
@@ -64,7 +80,7 @@ summary_length: 8000
 max_split_length: 20
 
 # *Whether to reflect the translation result in the original text
-reflect_translate: true
+reflect_translate: false
 
 # *Whether to pause after extracting professional terms and before translation, allowing users to manually adjust the terminology table output\log\terminology.json
 pause_before_translate: false

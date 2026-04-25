@@ -43,8 +43,12 @@ def translate_chunk(chunk, chunks, theme_prompt, i):
     things_to_note_prompt = search_things_to_note_in_prompt(chunk)
     previous_content_prompt = get_previous_content(chunks, i)
     after_content_prompt = get_after_content(chunks, i)
-    translation, english_result = translate_lines(chunk, previous_content_prompt, after_content_prompt, things_to_note_prompt, theme_prompt, i)
-    return i, english_result, translation
+    try:
+        translation, english_result = translate_lines(chunk, previous_content_prompt, after_content_prompt, things_to_note_prompt, theme_prompt, i)
+        return i, english_result, translation
+    except Exception as e:
+        console.print(f'[yellow]⚠️ Chunk {i} translation failed ({e}), using original text as fallback.[/yellow]')
+        return i, chunk, chunk
 
 # Add similarity calculation function
 def similar(a, b):
