@@ -11,7 +11,7 @@ display_language: "zh-CN"
 
 # API settings
 api:
-  key: 'AIzaSyCqO_alG89hrO0lcI1HcXNqd1R9DKgZYqg'
+  key: 'YOUR_API_KEY_HERE'
   base_url: 'https://generativelanguage.googleapis.com/v1beta/openai/'
   model: 'models/gemini-3.1-flash-lite-preview'
   fallback_models:
